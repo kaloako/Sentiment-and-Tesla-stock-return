@@ -1,0 +1,236 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "name": "Untitled0.ipynb",
+      "provenance": [],
+      "collapsed_sections": [],
+      "include_colab_link": true
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    },
+    "accelerator": "GPU"
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/kaloako/Sentiment-and-Tesla-stock-return/blob/main/Python%20Script%3A%20Sentiment%20analysis\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "!pip install transformers"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "yXjD9LNf7oMg",
+        "outputId": "57cfa71c-906d-4288-f479-a43e32da63ce"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Requirement already satisfied: transformers in /usr/local/lib/python3.7/dist-packages (4.18.0)\n",
+            "Requirement already satisfied: huggingface-hub<1.0,>=0.1.0 in /usr/local/lib/python3.7/dist-packages (from transformers) (0.5.1)\n",
+            "Requirement already satisfied: sacremoses in /usr/local/lib/python3.7/dist-packages (from transformers) (0.0.53)\n",
+            "Requirement already satisfied: pyyaml>=5.1 in /usr/local/lib/python3.7/dist-packages (from transformers) (6.0)\n",
+            "Requirement already satisfied: requests in /usr/local/lib/python3.7/dist-packages (from transformers) (2.23.0)\n",
+            "Requirement already satisfied: tokenizers!=0.11.3,<0.13,>=0.11.1 in /usr/local/lib/python3.7/dist-packages (from transformers) (0.12.1)\n",
+            "Requirement already satisfied: importlib-metadata in /usr/local/lib/python3.7/dist-packages (from transformers) (4.11.3)\n",
+            "Requirement already satisfied: tqdm>=4.27 in /usr/local/lib/python3.7/dist-packages (from transformers) (4.64.0)\n",
+            "Requirement already satisfied: filelock in /usr/local/lib/python3.7/dist-packages (from transformers) (3.6.0)\n",
+            "Requirement already satisfied: regex!=2019.12.17 in /usr/local/lib/python3.7/dist-packages (from transformers) (2019.12.20)\n",
+            "Requirement already satisfied: numpy>=1.17 in /usr/local/lib/python3.7/dist-packages (from transformers) (1.21.6)\n",
+            "Requirement already satisfied: packaging>=20.0 in /usr/local/lib/python3.7/dist-packages (from transformers) (21.3)\n",
+            "Requirement already satisfied: typing-extensions>=3.7.4.3 in /usr/local/lib/python3.7/dist-packages (from huggingface-hub<1.0,>=0.1.0->transformers) (4.2.0)\n",
+            "Requirement already satisfied: pyparsing!=3.0.5,>=2.0.2 in /usr/local/lib/python3.7/dist-packages (from packaging>=20.0->transformers) (3.0.8)\n",
+            "Requirement already satisfied: zipp>=0.5 in /usr/local/lib/python3.7/dist-packages (from importlib-metadata->transformers) (3.8.0)\n",
+            "Requirement already satisfied: urllib3!=1.25.0,!=1.25.1,<1.26,>=1.21.1 in /usr/local/lib/python3.7/dist-packages (from requests->transformers) (1.24.3)\n",
+            "Requirement already satisfied: certifi>=2017.4.17 in /usr/local/lib/python3.7/dist-packages (from requests->transformers) (2021.10.8)\n",
+            "Requirement already satisfied: chardet<4,>=3.0.2 in /usr/local/lib/python3.7/dist-packages (from requests->transformers) (3.0.4)\n",
+            "Requirement already satisfied: idna<3,>=2.5 in /usr/local/lib/python3.7/dist-packages (from requests->transformers) (2.10)\n",
+            "Requirement already satisfied: click in /usr/local/lib/python3.7/dist-packages (from sacremoses->transformers) (7.1.2)\n",
+            "Requirement already satisfied: joblib in /usr/local/lib/python3.7/dist-packages (from sacremoses->transformers) (1.1.0)\n",
+            "Requirement already satisfied: six in /usr/local/lib/python3.7/dist-packages (from sacremoses->transformers) (1.15.0)\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "9TJ67dzu6w1H"
+      },
+      "outputs": [],
+      "source": [
+        "from transformers import AutoModelForSequenceClassification\n",
+        "from transformers import TFAutoModelForSequenceClassification\n",
+        "from transformers import AutoTokenizer\n",
+        "import numpy as np\n",
+        "from scipy.special import softmax\n",
+        "import csv\n",
+        "import urllib.request"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "def preprocess(text):\n",
+        "    new_text = []\n",
+        " \n",
+        " \n",
+        "    for t in text.split(\" \"):\n",
+        "        t = '@user' if t.startswith('@') and len(t) > 1 else t\n",
+        "        t = 'http' if t.startswith('http') else t\n",
+        "        new_text.append(t)\n",
+        "    return \" \".join(new_text)\n",
+        "\n",
+        "\n",
+        "task='sentiment'\n",
+        "MODEL = f\"cardiffnlp/twitter-roberta-base-{task}\""
+      ],
+      "metadata": {
+        "id": "DVpTx-1c62Xg"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "tokenizer = AutoTokenizer.from_pretrained(MODEL)\n"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "_bqoJ8jB8C1h",
+        "outputId": "e061f2f6-9b34-41df-a49f-ba1ddb6139d8"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "error",
+          "ename": "OSError",
+          "evalue": "ignored",
+          "traceback": [
+            "\u001b[0;31m---------------------------------------------------------------------------\u001b[0m",
+            "\u001b[0;31mOSError\u001b[0m                                   Traceback (most recent call last)",
+            "\u001b[0;32m<ipython-input-4-d0e0799bf10a>\u001b[0m in \u001b[0;36m<module>\u001b[0;34m()\u001b[0m\n\u001b[0;32m----> 1\u001b[0;31m \u001b[0mtokenizer\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mAutoTokenizer\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mfrom_pretrained\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mMODEL\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m",
+            "\u001b[0;32m/usr/local/lib/python3.7/dist-packages/transformers/models/auto/tokenization_auto.py\u001b[0m in \u001b[0;36mfrom_pretrained\u001b[0;34m(cls, pretrained_model_name_or_path, *inputs, **kwargs)\u001b[0m\n\u001b[1;32m    544\u001b[0m             \u001b[0mtokenizer_class_py\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mtokenizer_class_fast\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mTOKENIZER_MAPPING\u001b[0m\u001b[0;34m[\u001b[0m\u001b[0mtype\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mconfig\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m]\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    545\u001b[0m             \u001b[0;32mif\u001b[0m \u001b[0mtokenizer_class_fast\u001b[0m \u001b[0;32mand\u001b[0m \u001b[0;34m(\u001b[0m\u001b[0muse_fast\u001b[0m \u001b[0;32mor\u001b[0m \u001b[0mtokenizer_class_py\u001b[0m \u001b[0;32mis\u001b[0m \u001b[0;32mNone\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--> 546\u001b[0;31m                 \u001b[0;32mreturn\u001b[0m \u001b[0mtokenizer_class_fast\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mfrom_pretrained\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mpretrained_model_name_or_path\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0;34m*\u001b[0m\u001b[0minputs\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0;34m**\u001b[0m\u001b[0mkwargs\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m    547\u001b[0m             \u001b[0;32melse\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    548\u001b[0m                 \u001b[0;32mif\u001b[0m \u001b[0mtokenizer_class_py\u001b[0m \u001b[0;32mis\u001b[0m \u001b[0;32mnot\u001b[0m \u001b[0;32mNone\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
+            "\u001b[0;32m/usr/local/lib/python3.7/dist-packages/transformers/tokenization_utils_base.py\u001b[0m in \u001b[0;36mfrom_pretrained\u001b[0;34m(cls, pretrained_model_name_or_path, *init_inputs, **kwargs)\u001b[0m\n\u001b[1;32m   1763\u001b[0m         \u001b[0;32mif\u001b[0m \u001b[0mall\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mfull_file_name\u001b[0m \u001b[0;32mis\u001b[0m \u001b[0;32mNone\u001b[0m \u001b[0;32mfor\u001b[0m \u001b[0mfull_file_name\u001b[0m \u001b[0;32min\u001b[0m \u001b[0mresolved_vocab_files\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mvalues\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m   1764\u001b[0m             raise EnvironmentError(\n\u001b[0;32m-> 1765\u001b[0;31m                 \u001b[0;34mf\"Can't load tokenizer for '{pretrained_model_name_or_path}'. If you were trying to load it from \"\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m   1766\u001b[0m                 \u001b[0;34m\"'https://huggingface.co/models', make sure you don't have a local directory with the same name. \"\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m   1767\u001b[0m                 \u001b[0;34mf\"Otherwise, make sure '{pretrained_model_name_or_path}' is the correct path to a directory \"\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
+            "\u001b[0;31mOSError\u001b[0m: Can't load tokenizer for 'cardiffnlp/twitter-roberta-base-sentiment'. If you were trying to load it from 'https://huggingface.co/models', make sure you don't have a local directory with the same name. Otherwise, make sure 'cardiffnlp/twitter-roberta-base-sentiment' is the correct path to a directory containing all relevant files for a RobertaTokenizerFast tokenizer."
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "model = AutoModelForSequenceClassification.from_pretrained(MODEL)\n",
+        "model.save_pretrained(MODEL)"
+      ],
+      "metadata": {
+        "id": "oNzh_sS48HQ9"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "output"
+      ],
+      "metadata": {
+        "id": "Gy7I75j2-Z0_"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "softmax(output[0][0].detach().numpy(), axis=0)"
+      ],
+      "metadata": {
+        "id": "SPNtDImT8gYw"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "import pandas as pd"
+      ],
+      "metadata": {
+        "id": "jt9b_l-u8hDm"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "df = pd.read_csv(\"TESLA_Tweets.csv\")"
+      ],
+      "metadata": {
+        "id": "sX2pgAQd9PmA"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "tweets=list(df.body.values)"
+      ],
+      "metadata": {
+        "id": "PEJ4UZCy9eGH"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "text = list(map(preprocess, tweets))\n",
+        "encoded_input = tokenizer(text, return_tensors='pt', padding=True, truncation=True)\n",
+        "output = softmax(model(**encoded_input)['logits'].detach().numpy(), axis=1)"
+      ],
+      "metadata": {
+        "id": "sgVvPO768KjP"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        ""
+      ],
+      "metadata": {
+        "id": "O2oEp6bnQIzc"
+      },
+      "execution_count": null,
+      "outputs": []
+    }
+  ]
+}
