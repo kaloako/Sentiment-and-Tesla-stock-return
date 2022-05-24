@@ -1,0 +1,28 @@
+plot(Sentiment)
+adf.test(Sentiment)
+fit_Arima <- auto.arima(Sentiment)
+acf(fit_Arima)
+pacf(fit_Arima)
+grangertest(StockReturn ~ Sentiment, order = 1)
+grangertest(StockReturn ~ Sentiment, order=2)
+plot(Dif)
+SentArima2 <- auto.arima(RawData2$`Sentiment value acc. U. weekend`, ic = "aic", trace = TRUE)
+SentArima3 <- auto.arima(RawData2$`Sentiment value acc. U. weekend`, ic = "bic", trace = TRUE)
+Box.test(fit_ARIMA$residuals, lag = 4, type = "Ljung Box", fitdf = 2)
+Box.test(fit_ARIMA$residuals, lag = 5, type = "Ljung Box", fitdf = 3)
+HoltWinters = HoltWinters(Sentiment, seasonal = "additive")
+accuracy(fit_Arima)
+accuracy(HoltWinters)
+forecast <-forecast(fit_ARIMA, h = 4)
+ARIMA50 <- auto.arima(TS50)
+SentArima50 <- auto.arima(TS50, ic = "aic", trace = TRUE)
+SentArima-50 <- auto.arima(TS50, ic = "bic", trace = TRUE)
+acf(ARIMA50)
+pacf(ARIMA50)
+grangertest(Book49$`Stock return` ~ Book49$sentiment, order = 10)
+forecast50 <- forecast(ARIMA50, h = 10)
+forecast50
+accuracy(ARIMA50)
+
+
+
